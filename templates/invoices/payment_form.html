@@ -1,0 +1,134 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }} - Inventory Management System{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Heading -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 text-gray-800">{{ title }}</h1>
+        <a href="{% url 'invoice-detail' invoice.id %}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Back to Invoice
+        </a>
+    </div>
+    
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }}">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+    
+    <div class="row">
+        <!-- Invoice Summary -->
+        <div class="col-lg-4">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Invoice Summary</h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <strong>Invoice Number:</strong> {{ invoice.invoice_number }}
+                    </div>
+                    <div class="mb-3">
+                        <strong>Order Number:</strong> {{ invoice.order.order_number }}
+                    </div>
+                    <div class="mb-3">
+                        <strong>Client:</strong> {{ invoice.order.client.username }}
+                    </div>
+                    <div class="mb-3">
+                        <strong>Issue Date:</strong> {{ invoice.issue_date|date:"F d, Y" }}
+                    </div>
+                    <div class="mb-3">
+                        <strong>Due Date:</strong> {{ invoice.due_date|date:"F d, Y" }}
+                    </div>
+                    <div class="mb-3">
+                        <strong>Total Amount:</strong> ${{ invoice.total_amount }}
+                    </div>
+                    <div class="mb-3">
+                        <strong>Remaining Balance:</strong> ${{ remaining }}
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Payment Form -->
+        <div class="col-lg-8">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Payment Details</h6>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.amount.id_for_label }}">Amount*</label>
+                                <div class="input-group">
+                                    <div class="input-group-prepend">
+                                        <span class="input-group-text">$</span>
+                                    </div>
+                                    {{ form.amount }}
+                                </div>
+                                {% if form.amount.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.amount.errors }}
+                                </div>
+                                {% endif %}
+                                <small class="form-text text-muted">Remaining balance: ${{ remaining }}</small>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.method.id_for_label }}">Payment Method*</label>
+                                {{ form.method }}
+                                {% if form.method.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.method.errors }}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.payment_date.id_for_label }}">Payment Date*</label>
+                                {{ form.payment_date }}
+                                {% if form.payment_date.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.payment_date.errors }}
+                                </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.reference.id_for_label }}">Reference</label>
+                                {{ form.reference }}
+                                {% if form.reference.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.reference.errors }}
+                                </div>
+                                {% endif %}
+                                <small class="form-text text-muted">Transaction ID, check number, etc.</small>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group mb-3">
+                            <label for="{{ form.notes.id_for_label }}">Notes</label>
+                            {{ form.notes }}
+                            {% if form.notes.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.notes.errors }}
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Record Payment
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

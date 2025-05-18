@@ -1,0 +1,237 @@
+{% extends 'base.html' %}
+
+{% block title %}Create Order - Inventory Management System{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Heading -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 text-gray-800">Create Order</h1>
+        <a href="{% url 'orders-list' %}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Back to List
+        </a>
+    </div>
+    
+    <div class="card shadow mb-4">
+        <div class="card-body">
+            <form id="orderForm">
+                {% csrf_token %}
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="client">Client</label>
+                            <select class="form-control" id="client" name="client" required>
+                                <option value="">Select Client</option>
+                                {% for client in clients %}
+                                <option value="{{ client.id }}">{{ client.username }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-group mb-3">
+                    <label for="notes">Notes</label>
+                    <textarea class="form-control" id="notes" name="notes" rows="3"></textarea>
+                </div>
+                
+                <hr>
+                
+                <h5>Order Items</h5>
+                <div id="orderItems">
+                    <div class="card mb-3">
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-5">
+                                    <div class="form-group">
+                                        <label>Product</label>
+                                        <select class="form-control product-select" required>
+                                            <option value="">Select Product</option>
+                                            {% for product in products %}
+                                            <option value="{{ product.id }}" data-price="{{ product.selling_price }}">{{ product.name }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-2">
+                                    <div class="form-group">
+                                        <label>Quantity</label>
+                                        <input type="number" class="form-control quantity-input" min="1" value="1" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="form-group">
+                                        <label>Price</label>
+                                        <input type="number" class="form-control price-input" step="0.01" min="0" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-2">
+                                    <div class="form-group">
+                                        <label>&nbsp;</label>
+                                        <button type="button" class="btn btn-danger btn-block remove-item">Remove</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <button type="button" id="addItemBtn" class="btn btn-info mb-3">
+                    <i class="fas fa-plus"></i> Add Item
+                </button>
+                
+                <hr>
+                
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <h5>Total: $<span id="orderTotal">0.00</span></h5>
+                    </div>
+                    <div class="col-md-6 text-right">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Create Order
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // إضافة عنصر جديد
+        document.getElementById('addItemBtn').addEventListener('click', function() {
+            const template = document.querySelector('#orderItems .card').cloneNode(true);
+            
+            // مسح القيم
+            template.querySelector('.product-select').value = '';
+            template.querySelector('.quantity-input').value = '1';
+            template.querySelector('.price-input').value = '';
+            
+            // إضافة الحدث للحقول الجديدة
+            addEventListeners(template);
+            
+            document.getElementById('orderItems').appendChild(template);
+        });
+        
+        // إضافة الأحداث للعنصر الأول
+        addEventListeners(document.querySelector('#orderItems .card'));
+        
+        // تحديث السعر الإجمالي عند تغيير أي قيمة
+        function updateTotal() {
+            let total = 0;
+            const items = document.querySelectorAll('#orderItems .card');
+            
+            items.forEach(function(item) {
+                const quantity = parseFloat(item.querySelector('.quantity-input').value) || 0;
+                const price = parseFloat(item.querySelector('.price-input').value) || 0;
+                total += quantity * price;
+            });
+            
+            document.getElementById('orderTotal').textContent = total.toFixed(2);
+        }
+        
+        // إضافة الأحداث للعناصر
+        function addEventListeners(element) {
+            // تحديث السعر عند اختيار المنتج
+            element.querySelector('.product-select').addEventListener('change', function() {
+                const selectedOption = this.options[this.selectedIndex];
+                if (selectedOption.value) {
+                    const price = selectedOption.getAttribute('data-price');
+                    element.querySelector('.price-input').value = price;
+                    updateTotal();
+                }
+            });
+            
+            // تحديث السعر الإجمالي عند تغيير الكمية أو السعر
+            element.querySelector('.quantity-input').addEventListener('input', updateTotal);
+            element.querySelector('.price-input').addEventListener('input', updateTotal);
+            
+            // زر الحذف
+            element.querySelector('.remove-item').addEventListener('click', function() {
+                if (document.querySelectorAll('#orderItems .card').length > 1) {
+                    element.remove();
+                    updateTotal();
+                } else {
+                    alert('At least one item is required.');
+                }
+            });
+        }
+        
+        // إرسال الطلب
+        document.getElementById('orderForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const clientId = document.getElementById('client').value;
+            const notes = document.getElementById('notes').value;
+            
+            if (!clientId) {
+                alert('Please select a client.');
+                return;
+            }
+            
+            const items = [];
+            const itemElements = document.querySelectorAll('#orderItems .card');
+            
+            let isValid = true;
+            
+            itemElements.forEach(function(element) {
+                const productSelect = element.querySelector('.product-select');
+                const productId = productSelect.value;
+                const quantity = element.querySelector('.quantity-input').value;
+                const price = element.querySelector('.price-input').value;
+                
+                if (!productId || !quantity || !price) {
+                    isValid = false;
+                    return;
+                }
+                
+                items.push({
+                    product_id: productId,
+                    quantity: quantity,
+                    price: price
+                });
+            });
+            
+            if (!isValid) {
+                alert('Please fill all fields for each item.');
+                return;
+            }
+            
+            if (items.length === 0) {
+                alert('Please add at least one item.');
+                return;
+            }
+            
+            // إرسال البيانات إلى الخادم
+            fetch('{% url "order-create" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                },
+                body: JSON.stringify({
+                    client: clientId,
+                    notes: notes,
+                    items: items
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    alert(data.message);
+                    window.location.href = '{% url "orders-list" %}';
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while creating the order.');
+            });
+        });
+    });
+</script>
+{% endblock %}

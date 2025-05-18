@@ -1,0 +1,197 @@
+{% load invoice_extras %}
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Invoice #{{ invoice.invoice_number }}</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+        .invoice-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .invoice-header h1 {
+            color: #4e73df;
+            margin-bottom: 5px;
+        }
+        .company-info {
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+        .invoice-details {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 30px;
+            padding: 10px;
+            background-color: #f8f9fc;
+        }
+        .invoice-details-left, .invoice-details-right {
+            flex: 1;
+        }
+        .invoice-details strong {
+            display: inline-block;
+            width: 120px;
+        }
+        .invoice-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 30px;
+        }
+        .invoice-table th {
+            background-color: #4e73df;
+            color: white;
+            text-align: left;
+            padding: 10px;
+        }
+        .invoice-table td {
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
+        }
+        .invoice-table tfoot th, .invoice-table tfoot td {
+            border-top: 2px solid #4e73df;
+            font-weight: bold;
+        }
+        .totals-table {
+            width: 50%;
+            margin-left: auto;
+            margin-bottom: 30px;
+        }
+        .totals-table td {
+            padding: 5px;
+        }
+        .totals-table .total-row td {
+            border-top: 1px solid #333;
+            font-weight: bold;
+        }
+        .payment-info {
+            margin-top: 30px;
+            border-top: 1px solid #ddd;
+            padding-top: 10px;
+        }
+        .footer {
+            margin-top: 50px;
+            text-align: center;
+            font-size: 12px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="invoice-header">
+        <h1>INVOICE</h1>
+        <div>#{{ invoice.invoice_number }}</div>
+    </div>
+    
+    <div class="company-info">
+        <strong>Inventory Management System</strong><br>
+        123 Business Street, City<br>
+        Phone: +123-456-7890 | Email: info@example.com
+    </div>
+    
+    <div class="invoice-details">
+        <div class="invoice-details-left">
+            <p><strong>Bill To:</strong> {{ invoice.order.client.username }}</p>
+            <p><strong>Order Number:</strong> {{ invoice.order.order_number }}</p>
+        </div>
+        <div class="invoice-details-right">
+            <p><strong>Issue Date:</strong> {{ invoice.issue_date|date:"F d, Y" }}</p>
+            <p><strong>Due Date:</strong> {{ invoice.due_date|date:"F d, Y" }}</p>
+            <p><strong>Status:</strong> {{ invoice.get_status_display }}</p>
+        </div>
+    </div>
+    
+    <table class="invoice-table">
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Product</th>
+                <th>Quantity</th>
+                <th>Unit Price</th>
+                <th>Subtotal</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in order_items %}
+            <tr>
+                <td>{{ forloop.counter }}</td>
+                <td>{{ item.product.name }}</td>
+                <td>{{ item.quantity }}</td>
+                <td>${{ item.price }}</td>
+                <td>${{ item.subtotal }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    
+    <table class="totals-table">
+        <tr>
+            <td><strong>Subtotal:</strong></td>
+            <td>${{ invoice.subtotal }}</td>
+        </tr>
+        <tr>
+            <td><strong>Tax ({{ invoice.tax_rate }}%):</strong></td>
+            <td>${{ invoice.tax_amount }}</td>
+        </tr>
+        <tr>
+            <td><strong>Discount:</strong></td>
+            <td>${{ invoice.discount }}</td>
+        </tr>
+        <tr class="total-row">
+            <td><strong>Total:</strong></td>
+            <td>${{ invoice.total_amount }}</td>
+        </tr>
+        <tr>
+            <td><strong>Amount Paid:</strong></td>
+            <td>${{ total_paid }}</td>
+        </tr>
+        <tr class="total-row">
+            <td>${{ invoice.total_amount|sub:total_paid|default:"0.00" }}</td>
+            <td><strong>Balance Due:</strong></td>
+            <td>${{ invoice.total_amount|sub:total_paid }}</td>
+        </tr>
+    </table>
+    
+    {% if payments %}
+    <div class="payment-info">
+        <h3>Payment History</h3>
+        <table class="invoice-table">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Method</th>
+                    <th>Reference</th>
+                    <th>Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for payment in payments %}
+                <tr>
+                    <td>{{ payment.payment_date|date:"F d, Y" }}</td>
+                    <td>{{ payment.get_method_display }}</td>
+                    <td>{{ payment.reference|default:"-" }}</td>
+                    <td>${{ payment.amount }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+    
+    {% if invoice.notes %}
+    <div class="payment-info">
+        <h3>Notes</h3>
+        <p>{{ invoice.notes }}</p>
+    </div>
+    {% endif %}
+    
+    <div class="footer">
+        <p>Thank you for your business!</p>
+    </div>
+</body>
+</html>

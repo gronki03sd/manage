@@ -1,0 +1,46 @@
+<!-- في الملف templates/sidebar.html -->
+
+<div class="sidebar bg-light">
+    <div class="sidebar-sticky">
+        <ul class="nav flex-column">
+            <li class="nav-item">
+                <a class="nav-link {% if request.path == '/dashboard/' %}active{% endif %}" href="{% url 'dashboard' %}">
+                    <i class="fas fa-tachometer-alt me-2"></i> لوحة التحكم
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if '/inventory/' in request.path %}active{% endif %}" href="{% url 'inventory-list' %}">
+                    <i class="fas fa-boxes me-2"></i> إدارة المخزون
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if '/orders/' in request.path %}active{% endif %}" href="{% url 'order-list' %}">
+                    <i class="fas fa-shopping-cart me-2"></i> الطلبات
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if '/invoices/' in request.path %}active{% endif %}" href="{% url 'invoice-list' %}">
+                    <i class="fas fa-file-invoice-dollar me-2"></i> الفواتير
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if '/statistics/' in request.path %}active{% endif %}" href="{% url 'stats' %}">
+                    <i class="fas fa-chart-bar me-2"></i> الإحصائيات
+                </a>
+            </li>
+            
+            {% if user.role == 'ADMIN' %}
+            <li class="nav-item">
+                <a class="nav-link {% if '/users/' in request.path %}active{% endif %}" href="{% url 'user-list' %}">
+                    <i class="fas fa-users me-2"></i> المستخدمين
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if '/settings/' in request.path %}active{% endif %}" href="#">
+                    <i class="fas fa-cog me-2"></i> الإعدادات
+                </a>
+            </li>
+            {% endif %}
+        </ul>
+    </div>
+</div>

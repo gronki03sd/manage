@@ -1,0 +1,112 @@
+{% extends 'base.html' %}
+
+{% block title %}Client Dashboard - Inventory Management System{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Heading -->
+    <h1 class="h3 mb-4 text-gray-800">Client Dashboard</h1>
+    
+    <!-- Welcome Card -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Welcome, {{ request.user.username }}</h6>
+        </div>
+        <div class="card-body">
+            <p>Welcome to your client dashboard. Here you can view your recent orders and invoices.</p>
+        </div>
+    </div>
+    
+    <!-- Recent Orders -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Your Recent Orders</h6>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered" width="100%" cellspacing="0">
+                    <thead>
+                        <tr>
+                            <th>Order #</th>
+                            <th>Date</th>
+                            <th>Status</th>
+                            <th>Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for order in orders %}
+                        <tr>
+                            <td>{{ order.order_number }}</td>
+                            <td>{{ order.created_at|date:"M d, Y H:i" }}</td>
+                            <td>
+                                {% if order.status == 'PENDING' %}
+                                    <span class="badge bg-warning text-dark">{{ order.get_status_display }}</span>
+                                {% elif order.status == 'IN_PROGRESS' %}
+                                    <span class="badge bg-info">{{ order.get_status_display }}</span>
+                                {% elif order.status == 'COMPLETED' %}
+                                    <span class="badge bg-success">{{ order.get_status_display }}</span>
+                                {% elif order.status == 'CANCELLED' %}
+                                    <span class="badge bg-danger">{{ order.get_status_display }}</span>
+                                {% elif order.status == 'REJECTED' %}
+                                    <span class="badge bg-secondary">{{ order.get_status_display }}</span>
+                                {% endif %}
+                            </td>
+                            <td>${{ order.total_amount }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="4" class="text-center">You don't have any orders yet.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Invoices -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Your Invoices</h6>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered" width="100%" cellspacing="0">
+                    <thead>
+                        <tr>
+                            <th>Invoice #</th>
+                            <th>Issue Date</th>
+                            <th>Due Date</th>
+                            <th>Amount</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for invoice in invoices %}
+                        <tr>
+                            <td>{{ invoice.invoice_number }}</td>
+                            <td>{{ invoice.issue_date|date:"M d, Y" }}</td>
+                            <td>{{ invoice.due_date|date:"M d, Y" }}</td>
+                            <td>${{ invoice.total_amount }}</td>
+                            <td>
+                                {% if invoice.status == 'PENDING' %}
+                                    <span class="badge bg-warning text-dark">{{ invoice.get_status_display }}</span>
+                                {% elif invoice.status == 'PAID' %}
+                                    <span class="badge bg-success">{{ invoice.get_status_display }}</span>
+                                {% elif invoice.status == 'CANCELLED' %}
+                                    <span class="badge bg-danger">{{ invoice.get_status_display }}</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center">You don't have any invoices yet.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

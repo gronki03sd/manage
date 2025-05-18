@@ -1,0 +1,198 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }} - Inventory Management System{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Heading -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">{{ title }}</h1>
+        <a href="{% url 'stock-movement-list' %}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Back to Stock Movements
+        </a>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">{{ title }}</h6>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        {% if form.errors %}
+                        <div class="alert alert-danger">
+                            <strong>Error:</strong> Please correct the errors below.
+                        </div>
+                        {% endif %}
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.product.id_for_label }}">Product*</label>
+                                {{ form.product }}
+                                {% if form.product.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{<div class="invalid-feedback d-block">
+                                    {{ form.product.errors }}
+                                </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.movement_type.id_for_label }}">Movement Type*</label>
+                                {{ form.movement_type }}
+                                {% if form.movement_type.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.movement_type.errors }}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.quantity.id_for_label }}">Quantity*</label>
+                                {{ form.quantity }}
+                                {% if form.quantity.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.quantity.errors }}
+                                </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.reference.id_for_label }}">Reference</label>
+                                {{ form.reference }}
+                                {% if form.reference.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.reference.errors }}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.notes.id_for_label }}">Notes</label>
+                            {{ form.notes }}
+                            {% if form.notes.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.notes.errors }}
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary">Save</button>
+                        <a href="{% url 'stock-movement-list' %}" class="btn btn-secondary">Cancel</a>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const productSelect = document.getElementById('{{ form.product.id_for_label }}');
+        const movementTypeSelect = document.getElementById('{{ form.movement_type.id_for_label }}');
+        const quantityInput = document.getElementById('{{ form.quantity.id_for_label }}');
+        
+        // إذا كان المنتج محدد مسبقًا، يمكننا عرض معلومات المخزون الحالي
+        if (productSelect.value && !productSelect.getAttribute('readonly')) {
+            fetchProductStock(productSelect.value);
+        }
+        
+        // استمع إلى تغييرات في اختيار المنتج
+        if (!productSelect.getAttribute('readonly')) {
+            productSelect.addEventListener('change', function() {
+                if (this.value) {
+                    fetchProductStock(this.value);
+                }
+            });
+        }
+        
+        // وظيفة لجلب معلومات المخزون للمنتج المحدد
+        function fetchProductStock(productId) {
+            fetch(`/inventory/products/${productId}/`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    // إضافة معلومات المخزون بعد حقل الكمية
+                    let stockInfo = document.getElementById('stock-info');
+                    if (!stockInfo) {
+                        stockInfo = document.createElement('div');
+                        stockInfo.id = 'stock-info';
+                        stockInfo.className = 'form-text text-muted mt-1';
+                        quantityInput.parentNode.appendChild(stockInfo);
+                    }
+                    
+                    stockInfo.innerHTML = `Current stock: <strong>${data.quantity}</strong>`;
+                    
+                    // إذا كان نوع الحركة هو "إخراج" وتم تغيير المنتج، تحقق من الكمية المتاحة
+                    if (movementTypeSelect.value === 'OUT') {
+                        checkStockAvailability(data.quantity);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching product data:', error);
+                });
+        }
+        
+        // استمع إلى تغييرات في نوع الحركة
+        movementTypeSelect.addEventListener('change', function() {
+            const productId = productSelect.value;
+            if (productId && this.value === 'OUT') {
+                fetch(`/inventory/products/${productId}/`)
+                    .then(response => response.json())
+                    .then(data => {
+                        checkStockAvailability(data.quantity);
+                    })
+                    .catch(error => {
+                        console.error('Error fetching product data:', error);
+                    });
+            }
+        });
+        
+        // وظيفة للتحقق من توفر المخزون عند الإخراج
+        function checkStockAvailability(availableStock) {
+            const currentQuantity = parseInt(quantityInput.value) || 0;
+            
+            let stockWarning = document.getElementById('stock-warning');
+            if (!stockWarning) {
+                stockWarning = document.createElement('div');
+                stockWarning.id = 'stock-warning';
+                quantityInput.parentNode.appendChild(stockWarning);
+            }
+            
+            if (currentQuantity > availableStock) {
+                stockWarning.className = 'invalid-feedback d-block';
+                stockWarning.textContent = `Warning: The quantity exceeds the available stock (${availableStock}).`;
+                quantityInput.classList.add('is-invalid');
+            } else {
+                stockWarning.className = '';
+                stockWarning.textContent = '';
+                quantityInput.classList.remove('is-invalid');
+            }
+        }
+        
+        // استمع إلى تغييرات في الكمية
+        quantityInput.addEventListener('input', function() {
+            if (movementTypeSelect.value === 'OUT' && productSelect.value) {
+                fetch(`/inventory/products/${productSelect.value}/`)
+                    .then(response => response.json())
+                    .then(data => {
+                        checkStockAvailability(data.quantity);
+                    })
+                    .catch(error => {
+                        console.error('Error fetching product data:', error);
+                    });
+            }
+        });
+    });
+</script>
+{% endblock %}
